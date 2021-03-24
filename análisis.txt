@@ -1,0 +1,50 @@
+main():
+	Asigna los valores recibidos como argumentos a las filas, las columnas, las iteraciones, la variabilidad de la propagación, la posicion en la primera fila del inlet, el numero de columnas del inlet, fila inicial de la banda con partículas aleatorios, las filas de la banda, la densidad de las particulas, 3 semillas para generarar números aleatorios y el número de partículas (el número de partículas pasadas como argumentos y las partículas de la banda).
+	Para cada partícula se reserva memoria y se asigna una posición (fila, columna), la masa (= 0), la resistencia y la velocidad de moviemiento por las filas y las columnas (= 0). Se genera un movimiento para cada una de las partículas: para la fila se parte de la primera posición en la banda, el tamaño de la banda y número aleatorio, para la columna el número de columnas y un número aleatorio, la masa en base a 1 + un número aleatorio multiplicado x5 y su resistencia partiendo de un número aleatorio. La velocidad de movimiento de las filas y columnas vale 0.
+	Si DEBUG: Se imprime el número de filas, columnas, el máximo de iteraciones y la variabilidad. También se imprime la primera fila y el número de filas del inlet, la primera fila y el número de filas de la banda así como la densidad de cada celda. Se imprimen además las semillas para la generación de números aleatorios. Por último, para cada partícula se muestra el número de partícula (partiendo de 0), la fila y columna, la masa, la resistencia y la velocidad de la fila/columna. Se captura el tiempo.
+
+	-- MODIFICABLE --
+	Se reserva espacio para el flujo del aire, la copia del verctor anterior y las posiciones de las partículas, todos en base a las filas por las columnas del tablero, y se asigna un 0 como valor para cada posición. Se guarda el valor máximo de los enteros (INT_MAX = 2147483647, https://www.geeksforgeeks.org/int_max-int_min-cc-applications/) para evitar desbordamiento.
+	Se itera desde 0 hasta o bien se pueda desbordar o bien la variabilidad pueda desbordar y se realizan las acciones partiendo de la 1 y saltando cada STEP (= 8). Las acciones son las siguientes:
+		- Cambiar el valor de inlet: Se parte de la posición inicial del inlet y se recorre hasta el final del inlet. Se guardan la fase de la iteración en grados (M_PI: https://www.gnu.org/software/libc/manual/html_node/Mathematical-Constants.html), la fase del STEP y el nivel de presión calculada en base a 9 más el doble del seno de la fase de la iteración más la distancia a la posición inicial del inlet multiplicada por la fase del STEP. Se asigna un ruido aleatorio y se guarda en el valor de la posición actual del inlet de la primera fila del flujo del aire el nivel de presión más el ruido.
+		- Movimiento de las partículas: Se asigna un cero a las filas de partículas que van desde la primera hasta el menor entre el número de filas y el número de iteración. Para cada partícula con masa se llama al método que mueve las partículas en el vector del flujo del aire, indicando el número de partículas, el índice en el vector y el número de filas y columnas. Se incrementa en 1 el valor de las partículas en el vector que almacena la localización de las partículas.
+		- Actualizar las partículas: Se recorren todas las partículas y se extaen de ellas las posiciones de fila/columna y la resistencia. Se llama al método que actualiza el flujo del aire, agregando un vector que será una copia auxiliar para el flujo, el vector de localicación de las partículas, la fila y columna de la partícula, el número de columnas y un 0 que indica que no se deben saltar partículas. Se almacena (en 'a') el valor del flujo de la partícula y se almacena en esa posición de la matriz dicho valor multiplicado por la resitencia. Se almacena (en 'b') 'a' menos el nuevo valor de la partícula y se incrementa el valor de la partícula de la misma columna pero de la fila anterior en 'b'. Se incrementa el valor del elemento anterior y posterior de la diagonal en b (es la celda si es la primera o última de la diagonal).
+	Para cada iteración antes mencionada, se copia los valores de todas las partículas del flujo del aire desde la primera hasta la fila anterior de la iteración actual en el vector copia del flujo del aire. Se resetan las variables que almacenarán la variación máxima, la variación máxima entre filas y entre columnas. Se guarda el valor de la iteración/STEP, si es el valor es 0 entonces pasa a valer STEP. Si el valor obtenido es menor o igual que la iteración actual, se guarda, para cada columna, el resultado de actualizar el flujo, (agregando el vector de copia del flujo, el vector de localizaciones de las partículas, el valor antes obtenido, la columna en cuestión, el número de columnas y 1 para indicar que se salte una partícula) y si es mayor que la variación máxima actual, se guarda dicho valor en la variación máxima y la fila y columna en la que se ha producido dicha variación (en las variables de las fila/columna con variación máxima). 
+	-- FIN MODIFICABLE --
+	
+	Si DEBUG: Se imprimen (con una llamada a un método), el número de iteración, el número de filas/columnas, lso valores del flujo, el número de partículas, las localizaciones de las pertículas, la fila/colunma con la variación máxima y la variación máxima.
+	
+	Se obtiene el tiempo de ejecución y se imprime por pantalla. También se obtiene (en a) el mínimo entre el número de iteraciones y filas. Se imprimen también las estadísticas: número de iteraciones, variación máxima, fila y columna con variación máxima y cada 6 posiciones de la última fila de la matriz del flujo. Se liberan los vectores a los que se había reservado espacio y finzaliza el programa.
+
+
+Particle:
+	Struct que almacena información de las partículas: fila/columna, masa, resitencia al flujo del aire y la velocidad de movimiento en las filas y columnas. 
+
+
+cp_Wtime():
+	Struct que devuelve el tiempo del sistema. Se usa para calcular el tiempo de ejecución del programa (capturando el tiempo al principio y al final del main y calculando la diferencia). 
+
+
+accessMat(arr, exp1, exp2):
+	Permite acceder elemento dado por la fila/columna exp1/exp2 de arr.
+
+
+update_flow( int *flow, int *flow_copy, int *particle_locations, int row, int col, int columns, int skip_particles ):
+	Actualiza el flujo en una posición de la matriz y devuelve la variación entre el valor anterior y el actual.
+	Si se pide que se salte la partícula y su valor en la matriz de flujo es cero, devuelve cero.
+	Si no está en uno de los bordes, se incrementa el valor de la partícula en el doble del valor de la partícula en la misma posición de la fila anterior, y el valor de las partículas que están a los lados de dicho elemento de la fila anterior. Todo el resultado se divide entre 5.
+	Si está en uno de los bordes, se realiza el incremento anterior exceptuando el valor que no existe en la matriz (ya sea izquierda o derecha) y se divide esta vez entre 4 el resultado obtenido.
+
+
+move_particle( int *flow, Particle *particles, int particle, int rows, int columns ):
+	Se itera desde 0 hasta el valor de STEPS. Para cada iteración se obtenen las fila y la columna de la partícula a mover y el valor de la partícula en la misma posición de la fila anterior de la matriz de flujo (partícula ant). Se guardan los valores de las partículas que están a la izquierda y derecha de la partícula de la fila anterior previamente mencionada (0 si se exceden los límites de la matriz). Se almacenan el valor de ant dividido entre el valor de la masa de la partícula (flow_row), y la direfencia entre los valores de las partículas de la izquierda y derecha ant dividida entre la masa de la partícula (flow_col).
+	Se incrementa la velocidad de las filas y columnas de las partículas en las cantidades de flow_row y flow_col, repectivamente. Ambos valores se dividen entre 2.
+	Se incrementa el valor de la fila/columna de la partícula en el valor de la velocidad de la fila/columna. Dichos incremetos se dividen entre STEPS y luego entre 2. El valor obtenido se ajusta a las dimensiones de la matriz en caso de salirse de lso límites.
+
+
+print_status( int iteration, int rows, int columns, int *flow, int num_particles, int *particle_locations, int max_var, int max_var_row, int max_var_col ):
+	Imprime por pantalla, usando el formato dado por el código, los parámetros pasados como argumentos.
+
+
+show_usage( char *program_name ):
+	Muestra en la salida de error la forma de usar el programa
